@@ -48,7 +48,7 @@
   "Costa d'Avorio": "E",
   "Costa Rica": "D",
   "Croazia": "U",
-  "Curaçao": "D"
+  "Curaçao": "D",
   "Danimarca": "U",
   "Dominica": "D",
   "Ecuador": "D",
@@ -180,7 +180,7 @@
   "Repubblica Dominicana": "D",
   "Riunione": "E",
   "Romania": "T",
-  "Ruanda": "E"
+  "Ruanda": "E",
   "Saint Kitts e Nevis": "D",
   "Saint Lucia": "D",
   "Saint Martin": "D",
@@ -242,4 +242,5 @@
   "Zambia": "E",
   "Zimbabwe": "E"
 }
+
 
