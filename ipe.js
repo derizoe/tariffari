@@ -1,31 +1,51 @@
 // ======================================================
-//  FEDEX IPE – MOTORE DI CALCOLO COMPLETO E PULITO
+//  FEDEX IP – MOTORE DI CALCOLO COMPLETO E PULITO
 // ======================================================
 
 // ---------------------------
-//  CARICAMENTO TARIFFE
+//  CARICAMENTO TARIFFE IP
 // ---------------------------
 
 let tariffe = null;
+let zoneMap = null;
 
-async function caricaTariffe() {
+async function caricaDati() {
     try {
-        const r = await fetch("tariffe.json");
-        tariffe = await r.json();
-        console.log("Tariffe FedEx IPE caricate.");
+        const t = await fetch("tariffe_ip.json");
+        tariffe = await t.json();
+
+        const z = await fetch("zone_ip.json");
+        zoneMap = await z.json();
+
+        popolaMenuPaesi();
+        console.log("Dati FedEx IP caricati.");
     } catch (err) {
-        console.error("Errore nel caricamento tariffe:", err);
+        console.error("Errore nel caricamento dati:", err);
     }
 }
 
-caricaTariffe();
+caricaDati();
+
+
+// ---------------------------
+//  POPOLAMENTO MENU PAESI
+// ---------------------------
+
+function popolaMenuPaesi() {
+    const select = document.getElementById("paese");
+    Object.keys(zoneMap).sort().forEach(paese => {
+        const opt = document.createElement("option");
+        opt.value = paese;
+        opt.textContent = paese;
+        select.appendChild(opt);
+    });
+}
 
 
 // ---------------------------
 //  FUNZIONI DI SUPPORTO
 // ---------------------------
 
-// Trova la tariffa per un singolo collo
 function trovaTariffa(zona, peso) {
     if (!tariffe || !tariffe[zona]) return null;
 
@@ -40,7 +60,6 @@ function trovaTariffa(zona, peso) {
     return null;
 }
 
-// Calcolo multi-collo
 function calcolaMultiCollo(zona, pesi) {
     let totale = 0;
 
@@ -58,27 +77,14 @@ function calcolaMultiCollo(zona, pesi) {
 //  LOGICA PRINCIPALE
 // ---------------------------
 
-function calcolaTariffaIPE(zona, pesi) {
-    if (!tariffe) {
-        return { errore: "Tariffe non caricate." };
-    }
-
-    if (!zona || !tariffe[zona]) {
-        return { errore: "Zona non valida." };
-    }
-
-    if (!Array.isArray(pesi) || pesi.length === 0) {
-        return { errore: "Nessun collo inserito." };
-    }
-
-    if (pesi.some(isNaN)) {
-        return { errore: "Pesi non validi." };
-    }
+function calcolaTariffaIP(zona, pesi) {
+    if (!tariffe) return { errore: "Tariffe non caricate." };
+    if (!zona || !tariffe[zona]) return { errore: "Zona non valida." };
+    if (!Array.isArray(pesi) || pesi.length === 0) return { errore: "Nessun collo inserito." };
+    if (pesi.some(isNaN)) return { errore: "Pesi non validi." };
 
     const totale = calcolaMultiCollo(zona, pesi);
-    if (totale === null) {
-        return { errore: "Peso fuori dalle fasce disponibili." };
-    }
+    if (totale === null) return { errore: "Peso fuori dalle fasce disponibili." };
 
     const pesoTotale = pesi.reduce((a, b) => a + b, 0);
 
@@ -96,25 +102,32 @@ function calcolaTariffaIPE(zona, pesi) {
 // ---------------------------
 
 document.getElementById("calcola").addEventListener("click", () => {
-    const pesi = [...document.querySelectorAll(".collo")].map(i => parseFloat(i.value));
-
-    // Per ora zona fissa (poi la rendiamo selezionabile)
-    const zona = "A";
-
-    const risultato = calcolaTariffaIPE(zona, pesi);
+    const paese = document.getElementById("paese").value;
     const box = document.getElementById("risultato");
 
-    if (risultato.errore) {
-        box.innerHTML = risultato.errore;
+    if (!paese) {
+        box.innerHTML = "Seleziona un Paese.";
+        return;
+    }
+
+    const zona = zoneMap[paese];
+
+    const pesi = [...document.querySelectorAll(".collo")].map(i => parseFloat(i.value));
+
+    const output = calcolaTariffaIP(zona, pesi);
+
+    if (output.errore) {
+        box.innerHTML = output.errore;
         return;
     }
 
     box.innerHTML = `
         <strong>Risultato</strong><br>
-        Zona: ${risultato.zona}<br>
-        Colli: ${risultato.numeroColli}<br>
-        Peso totale: ${risultato.pesoTotale.toFixed(1)} kg<br>
-        Totale: € ${risultato.totale.toFixed(2)}
+        Paese: ${paese}<br>
+        Zona: ${zona}<br>
+        Colli: ${output.numeroColli}<br>
+        Peso totale: ${output.pesoTotale.toFixed(1)} kg<br>
+        Totale: € ${output.totale.toFixed(2)}
     `;
 });
 
@@ -136,4 +149,3 @@ document.getElementById("addCollo").addEventListener("click", () => {
     div.appendChild(input);
     document.getElementById("colliContainer").appendChild(div);
 });
-
