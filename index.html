@@ -1,48 +1,133 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Calcolatore Tariffe FedEx IP</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Calcolatore Tariffe FedEx IP</title>
 
-    <style>
-        body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
-        h1 { text-align: center; margin-bottom: 30px; }
-        .box { background: white; padding: 20px; border-radius: 10px; margin-bottom: 25px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
-        button { padding: 10px 15px; border: none; background: #4a4aff; color: white; border-radius: 6px; cursor: pointer; margin-right: 10px; }
-        button:hover { background: #2e2ee6; }
-        input[type="number"] { padding: 8px; margin: 5px 0; width: 150px; }
-        #colliContainer div { margin-bottom: 10px; }
-        #risultato { margin-top: 20px; font-size: 1.1rem; font-weight: bold; }
-    </style>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      background: #f5f5f5;
+    }
+    h1 {
+      text-align: center;
+    }
+    .box {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      max-width: 600px;
+      margin: auto;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    select, input {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      font-size: 16px;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+    #risultato {
+      margin-top: 20px;
+      font-size: 18px;
+      font-weight: bold;
+    }
+  </style>
 </head>
 
 <body>
 
-    <h1>Calcolatore Tariffe FedEx IP</h1>
+  <h1>Calcolatore Tariffe FedEx IP</h1>
 
-    <div class="box">
-        <h2>Destinazione</h2>
-        <label for="paese">Paese di destinazione</label>
-        <select id="paese">
-            <option value="">Seleziona un Paese</option>
-        </select>
-    </div>
+  <div class="box">
+    <label>Paese di destinazione</label>
+    <select id="paese">
+      <option value="">Seleziona un Paese</option>
+    </select>
 
-    <div class="box">
-        <h2>Inserisci i colli</h2>
-        <button id="addCollo">+ Aggiungi collo</button>
-        <button id="calcola">Calcola tariffa</button>
-        <div id="colliContainer"></div>
-        <div id="risultato"></div>
-    </div>
+    <label>Peso (kg)</label>
+    <input type="number" id="peso" min="0" step="0.1">
 
-    <!-- LO SCRIPT DEVE ESSERE QUI, NON NELL'HEAD -->
-    <script src="ipe.js"></script>
+    <button onclick="calcola()">Calcola tariffa</button>
+
+    <div id="risultato"></div>
+  </div>
+
+<script>
+let zoneMap = {};
+let tariffe = {};
+
+async function caricaDati() {
+  try {
+    const z = await fetch("zone_ip.json");
+    zoneMap = await z.json();
+
+    const t = await fetch("tariffe_ip.json");
+    tariffe = await t.json();
+
+    popolaMenuPaesi();
+  } catch (e) {
+    console.error("Errore nel caricamento dei file JSON:", e);
+  }
+}
+
+function popolaMenuPaesi() {
+  const select = document.getElementById("paese");
+  select.innerHTML = '<option value="">Seleziona un Paese</option>';
+
+  const paesi = Object.keys(zoneMap).sort();
+
+  paesi.forEach(p => {
+    const opt = document.createElement("option");
+    opt.value = p;
+    opt.textContent = p;
+    select.appendChild(opt);
+  });
+}
+
+function calcola() {
+  const paese = document.getElementById("paese").value;
+  const peso = parseFloat(document.getElementById("peso").value);
+  const output = document.getElementById("risultato");
+
+  if (!paese || isNaN(peso)) {
+    output.textContent = "Inserisci tutti i dati.";
+    return;
+  }
+
+  const zona = zoneMap[paese];
+  const listino = tariffe[zona];
+
+  if (!listino) {
+    output.textContent = "Zona non trovata.";
+    return;
+  }
+
+  let prezzo = null;
+
+  for (let voce of listino) {
+    if (peso <= voce.peso) {
+      prezzo = voce.prezzo;
+      break;
+    }
+  }
+
+  if (prezzo === null) {
+    prezzo = listino[listino.length - 1].prezzo;
+  }
+
+  output.textContent = `Tariffa: € ${prezzo.toFixed(2)}`;
+}
+
+caricaDati();
+</script>
 
 </body>
 </html>
-
-
-
-
